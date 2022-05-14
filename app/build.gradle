@@ -34,6 +34,9 @@ android {
             jni {
                 srcDirs 'src/main/jni', 'src/main/jniLibs'
             }
+            assets {
+                srcDirs 'src/main/assets'
+            }
         }
     }
 }

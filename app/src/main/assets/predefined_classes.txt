@@ -1,0 +1,15 @@
+ine_card
+ife_card
+passport_card
+nacional_label
+federal_label
+passport_label
+face
+mexican_emblem
+name_label
+address_label
+curp_label
+gender_label
+id_label
+birthdate_label
+machine_readable_zone

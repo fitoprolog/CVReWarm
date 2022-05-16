@@ -1,0 +1,1 @@
+/home/fito/source/CVReWarm/sdk/build/intermediates/cmake/release/obj/armeabi-v7a

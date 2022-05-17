@@ -54,8 +54,18 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraActivity;
 import java.util.Collections;
 import android.content.pm.ActivityInfo;
-
-
+import org.tensorflow.lite.Interpreter;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import android.content.res.AssetFileDescriptor;
+import android.app.Activity;
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity  implements /*OnTouchListener,*/ CvCameraViewListener2 {
     private static final String  TAG              = "MainActivity";
@@ -73,6 +83,8 @@ public class MainActivity extends AppCompatActivity  implements /*OnTouchListene
     private static List<Scalar> colors=new ArrayList<>();
     private CameraBridgeViewBase mOpenCvCameraView;
     private static final int MY_CAMERA_REQUEST_CODE = 100;
+    protected ByteBuffer imgData = null;
+    private Interpreter tflite;
 
     private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -91,6 +103,16 @@ public class MainActivity extends AppCompatActivity  implements /*OnTouchListene
             }
         }
     };
+
+    /** Memory-map the model file in Assets. */
+    private MappedByteBuffer loadModelFile(Activity activity) throws IOException {
+        AssetFileDescriptor fileDescriptor = activity.getAssets().openFd("output.tflite");
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    }
 
     public MainActivity() {
         Log.i(TAG, "Instantiated new " + this.getClass());
@@ -114,7 +136,6 @@ public class MainActivity extends AppCompatActivity  implements /*OnTouchListene
         mOpenCvCameraView.setCameraPermissionGranted();
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
 
         if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, MY_CAMERA_REQUEST_CODE);
@@ -206,6 +227,8 @@ public class MainActivity extends AppCompatActivity  implements /*OnTouchListene
         SPECTRUM_SIZE = new Size(200, 64);
         CONTOUR_COLOR = new Scalar(255,0,0,255);
         File file = new File(getAssetsFile("yolov3-tiny_training.cfg",this));
+        imgData = ByteBuffer.allocateDirect( 128 * 128 * 3 * 4);
+        imgData.order(ByteOrder.nativeOrder());
         if(file.exists())
             Toast.makeText(this,"YUSH" , Toast.LENGTH_LONG).show();
         else
@@ -214,11 +237,18 @@ public class MainActivity extends AppCompatActivity  implements /*OnTouchListene
                 getAssetsFile( "yolov3-tiny_training_last.weights",this));
         if ( net.empty() ) {
             Log.d(TAG, "ERROR LOADING WEIGHTS");
-            Toast.makeText(this,"ERROR LOADING WEIGHTS" , Toast.LENGTH_LONG).show();
+            //Toast.makeText(this,"ERROR LOADING WEIGHTS" , Toast.LENGTH_LONG).show();
         }else
         {
             Log.d(TAG, "WEIGHTS LOADED CORRECTLY");
-            Toast.makeText(this,"WEIGHTS LOADED CORRECTLY" , Toast.LENGTH_LONG).show();
+            //Toast.makeText(this,"WEIGHTS LOADED CORRECTLY" , Toast.LENGTH_LONG).show();
+        }
+        try{
+          tflite = new Interpreter(loadModelFile(this));
+          tflite.allocateTensors();
+          Log.d(TAG, "PASSED TFLITE PART :D");
+        }catch(IOException e) {
+            Log.e("FAILTFLITE",e.toString());
         }
     }
 
@@ -257,69 +287,41 @@ public class MainActivity extends AppCompatActivity  implements /*OnTouchListene
         }
         return labelsArray;
     }
-
+    private void convertMattoTfLiteInput(Mat mat)
+    {
+        imgData.rewind();
+        int pixel = 0;
+        for (int i = 0; i < 128; ++i) {
+            for (int j = 0; j < 128; ++j) {
+                imgData.putFloat((float)mat.get(i,j)[0]);
+                imgData.putFloat((float)mat.get(i,j)[1]);
+                imgData.putFloat((float)mat.get(i,j)[2]);
+            }
+        }
+    }
+    private void ToMat(float [][][] d, Mat mat){
+        for (int i = 0; i < 128; ++i) {
+            for (int j = 0; j < 128; ++j) {
+                mat.put(i,j,d[i][j]);
+            }
+        }
+    }
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
         mRgba = inputFrame.rgba();
         Imgproc.cvtColor(mRgba, mRgba, Imgproc.COLOR_RGBA2RGB);
-
+        Mat resized = new Mat(128, 128, CvType.CV_8UC3);
+        Mat outMat  = new Mat( 128,128,CvType.CV_32FC(3));
+        float [][][][] out = new float [1][128][128][3];
+        Imgproc.resize(mRgba,resized,new Size(128,128));
+        convertMattoTfLiteInput(resized);
+        tflite.run(imgData, out);
+        ToMat(out[0],outMat);
+        outMat.convertTo(resized,CvType.CV_8UC3);
+        Imgproc.resize(resized,mRgba,new Size(mRgba.width(),mRgba.height()));
         /*Mat gray = new Mat(mRgba.height(),mRgba.width(),CvType.CV_8   UC1);
         Imgproc.cvtColor(mRgba,gray,Imgproc.COLOR_RGBA2GRAY);Pixel_3a_API_30_x86
         Imgproc.threshold(gray,gray,10,255,Imgproc.THRESH_BINARY);  
         Imgproc.cvtColor(gray,mRgba,Imgproc.COLOR_GRAY2BGRA);*/
-
-        Size frame_size = new Size(416, 416);
-        Scalar mean = new Scalar(127.5);
-        Mat blob = Dnn.blobFromImage(mRgba, 1.0 / 255.0, frame_size, mean, false, false);
-        List<Mat> result = new ArrayList<>();
-        List<String> outBlobNames = net.getUnconnectedOutLayersNames();
-
-        if (net != null) {
-            net.setInput(blob);
-            net.forward(result,outBlobNames);
-        }
-
-        float confThreshold = 0.01f;
-        Log.i("WERKS", "#Detections"+result.size());
-
-        //Log.i("WERKS","#labels"+classNames.size());
-        for (int i = 0;  i < result.size(); ++i) {
-            // each row is a candidate detection, the 1st 4 numbers are
-            // [center_x, center_y, width, height], followed by (N-4) class probabilities
-            Mat level = result.get(i);
-            for (int j = 0; j < level.rows(); ++j) {
-                Mat row = level.row(j);
-                Mat scores = row.colRange(5, level.cols());
-                Core.MinMaxLocResult mm = Core.minMaxLoc(scores);
-                float confidence = (float) mm.maxVal;
-                Point classIdPoint = mm.maxLoc;
-                if (confidence > confThreshold) {
-
-                    int centerX = (int) (row.get(0, 0)[0] * mRgba.cols());
-                    int centerY = (int) (row.get(0, 1)[0] * mRgba.rows());
-                    int width   = (int) (row.get(0,   2)[0] * mRgba.cols());
-                    int height  = (int) (row.get(0,  3)[0] * mRgba.rows());
-
-                    int left = (int) (centerX - width * 0.5);
-                    int top =(int)(centerY - height * 0.5);
-                    int right =(int)(centerX + width * 0.5);
-                    int bottom =(int)(centerY + height * 0.5);
-
-                    Point left_top = new Point(left, top);
-                    Point right_bottom=new Point(right, bottom);
-                    Point label_left_top = new Point(left, top-5);
-                    DecimalFormat df = new DecimalFormat("#.##");
-
-                    int class_id = (int) classIdPoint.x;
-                    String label= classNames.get(class_id) + ": " + df.format(confidence);
-                    Scalar color= colors.get(class_id);
-
-                    Imgproc.rectangle(mRgba, left_top,right_bottom , new Scalar(255,0,0), 3, 2);
-                    //Imgproc.putText(mRgba, label, label_left_top, 0, 1, new Scalar(0, 0, 0), 4);
-                    //Imgproc.putText(mRgba, label, label_left_top, 0, 1, new Scalar(255, 255, 255), 2);
-                }
-            }
-        }
-
         return mRgba;
     }
 

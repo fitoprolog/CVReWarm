@@ -1,20 +1,20 @@
 {
   "stringTable": {},
   "buildFiles": [
-    "/home/fito/source/CVReWarm/sdk/libcxx_helper/CMakeLists.txt"
+    "/home/fito/sources/CVReWarm/sdk/libcxx_helper/CMakeLists.txt"
   ],
   "cleanCommandsComponents": [
     [
       "/home/fito/Android/Sdk/cmake/3.10.2.4988404/bin/ninja",
       "-C",
-      "/home/fito/source/CVReWarm/sdk/.cxx/cmake/release/x86_64",
+      "/home/fito/sources/CVReWarm/sdk/.cxx/cmake/release/x86_64",
       "clean"
     ]
   ],
   "buildTargetsCommandComponents": [
     "/home/fito/Android/Sdk/cmake/3.10.2.4988404/bin/ninja",
     "-C",
-    "/home/fito/source/CVReWarm/sdk/.cxx/cmake/release/x86_64",
+    "/home/fito/sources/CVReWarm/sdk/.cxx/cmake/release/x86_64",
     "{LIST_OF_TARGETS_TO_BUILD}"
   ],
   "libraries": {
@@ -22,13 +22,13 @@
       "buildCommandComponents": [
         "/home/fito/Android/Sdk/cmake/3.10.2.4988404/bin/ninja",
         "-C",
-        "/home/fito/source/CVReWarm/sdk/.cxx/cmake/release/x86_64",
+        "/home/fito/sources/CVReWarm/sdk/.cxx/cmake/release/x86_64",
         "opencv_jni_shared"
       ],
       "buildType": "release",
       "abi": "x86_64",
       "artifactName": "opencv_jni_shared",
-      "output": "/home/fito/source/CVReWarm/sdk/.cxx/cmake/release/x86_64/libopencv_jni_shared.a"
+      "output": "/home/fito/sources/CVReWarm/sdk/.cxx/cmake/release/x86_64/libopencv_jni_shared.a"
     }
   },
   "toolchains": {},

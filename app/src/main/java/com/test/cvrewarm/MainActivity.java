@@ -2,6 +2,7 @@ package com.test.cvrewarm;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Camera;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -35,6 +36,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import android.content.Context;
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -51,7 +53,7 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraActivity;
 import java.util.Collections;
-
+import android.content.pm.ActivityInfo;
 
 
 
@@ -110,10 +112,27 @@ public class MainActivity extends AppCompatActivity  implements /*OnTouchListene
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
         mOpenCvCameraView.setCameraPermissionGranted();
+
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+
+
         if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.CAMERA}, MY_CAMERA_REQUEST_CODE);
         }
 
+    }
+    protected void setDisplayOrientation(Camera camera, int angle){
+        Method downPolymorphic;
+        try
+        {
+            downPolymorphic = camera.getClass().getMethod("setDisplayOrientation", new Class[] { int.class });
+            if (downPolymorphic != null)
+                downPolymorphic.invoke(camera, new Object[] { angle });
+        }
+        catch (Exception e1)
+        {
+            e1.printStackTrace();
+        }
     }
 
     @Override
@@ -143,7 +162,7 @@ public class MainActivity extends AppCompatActivity  implements /*OnTouchListene
         super.onResume();
         if (!OpenCVLoader.initDebug()) {
             Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
-            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
+            OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_4_0, this, mLoaderCallback);
 
         } else {
             Log.d(TAG, "OpenCV library found inside package. Using it!");
@@ -241,7 +260,7 @@ public class MainActivity extends AppCompatActivity  implements /*OnTouchListene
 
     public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
         mRgba = inputFrame.rgba();
-        Imgproc.cvtColor(mRgba, mRgba, Imgproc.COLOR_RGBA2BGR);
+        Imgproc.cvtColor(mRgba, mRgba, Imgproc.COLOR_RGBA2RGB);
 
         /*Mat gray = new Mat(mRgba.height(),mRgba.width(),CvType.CV_8   UC1);
         Imgproc.cvtColor(mRgba,gray,Imgproc.COLOR_RGBA2GRAY);Pixel_3a_API_30_x86
@@ -250,7 +269,7 @@ public class MainActivity extends AppCompatActivity  implements /*OnTouchListene
 
         Size frame_size = new Size(416, 416);
         Scalar mean = new Scalar(127.5);
-        Mat blob = Dnn.blobFromImage(mRgba, 1.0 / 255.0, frame_size, mean, true, false);
+        Mat blob = Dnn.blobFromImage(mRgba, 1.0 / 255.0, frame_size, mean, false, false);
         List<Mat> result = new ArrayList<>();
         List<String> outBlobNames = net.getUnconnectedOutLayersNames();
 

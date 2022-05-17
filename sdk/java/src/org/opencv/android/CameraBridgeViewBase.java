@@ -15,10 +15,12 @@ import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.graphics.Matrix;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.content.res.Configuration;
 
 /**
  * This is a basic class, implementing the interaction with Camera and OpenCV library.
@@ -426,6 +428,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
             Canvas canvas = getHolder().lockCanvas();
             if (canvas != null) {
                 canvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
+                canvas.rotate(90,  (canvas.getWidth()/ 2),(canvas.getHeight()/ 2));
                 if (BuildConfig.DEBUG)
                     Log.d(TAG, "mStretch value: " + mScale);
 
@@ -447,6 +450,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
                     mFpsMeter.measure();
                     mFpsMeter.draw(canvas, 20, 30);
                 }
+                //Log.i("CALLED","CALLED");
                 getHolder().unlockCanvasAndPost(canvas);
             }
         }

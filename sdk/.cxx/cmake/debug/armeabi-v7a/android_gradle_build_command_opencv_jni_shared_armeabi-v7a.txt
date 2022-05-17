@@ -1,7 +1,7 @@
 Executable : /home/fito/Android/Sdk/cmake/3.10.2.4988404/bin/ninja
 arguments : 
 -C
-/home/fito/source/CVReWarm/sdk/.cxx/cmake/debug/armeabi-v7a
+/home/fito/sources/CVReWarm/sdk/.cxx/cmake/debug/armeabi-v7a
 opencv_jni_shared
 jvmArgs : 
 

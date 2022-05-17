@@ -1,6 +1,6 @@
-set(CMAKE_HOST_SYSTEM "Linux-5.10.0-10-amd64")
+set(CMAKE_HOST_SYSTEM "Linux-5.10.0-9-amd64")
 set(CMAKE_HOST_SYSTEM_NAME "Linux")
-set(CMAKE_HOST_SYSTEM_VERSION "5.10.0-10-amd64")
+set(CMAKE_HOST_SYSTEM_VERSION "5.10.0-9-amd64")
 set(CMAKE_HOST_SYSTEM_PROCESSOR "x86_64")
 
 include("/home/fito/Android/Sdk/ndk/21.4.7075529/build/cmake/android.toolchain.cmake")
